@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Root</key>
+    <dict>
+        <key>Cells</key>
+        <array>
+            <dict>
+                <key>Type</key>
+                <string>BSSettingsCell</string>
+                <key>Title</key>
+                <string>Liquid Glass Effect</string>
+                <key>SettingsKey</key>
+                <string>enableLiquidGlass</string>
+                <key>DefaultValue</key>
+                <integer>1</integer>
+                <key>CellClass</key>
+                <string>BSSettingsBooleanCell</string>
+            </dict>
+            <dict>
+                <key>Type</key>
+                <string>BSSettingsCell</string>
+                <key>Title</key>
+                <string>Glass Opacity</string>
+                <key>SettingsKey</key>
+                <string>glassOpacity</string>
+                <key>DefaultValue</key>
+                <real>0.85</real>
+                <key>MinValue</key>
+                <integer>0</integer>
+                <key>MaxValue</key>
+                <integer>100</integer>
+                <key>Step</key>
+                <real>1</real>
+                <key>CellClass</key>
+                <string>BSSettingsSliderCell</string>
+            </dict>
+            <dict>
+                <key>Type</key>
+                <string>BSSettingsCell</string>
+                <key>Title</key>
+                <string>Glass Blur</string>
+                <key>SettingsKey</key>
+                <string>glassBlur</string>
+                <key>DefaultValue</key>
+                <real>15.0</real>
+                <key>MinValue</key>
+                <integer>0</integer>
+                <key>MaxValue</key>
+                <integer>50</integer>
+                <key>Step</key>
+                <real>0.5</real>
+                <key>CellClass</key>
+                <string>BSSettingsSliderCell</string>
+            </dict>
+            <dict>
+                <key>Type</key>
+                <string>BSSettingsCell</string>
+                <key>Title</key>
+                <string>Gloss Level</string>
+                <key>SettingsKey</key>
+                <string>glossLevel</string>
+                <key>DefaultValue</key>
+                <real>0.5</real>
+                <key>MinValue</key>
+                <integer>0</integer>
+                <key>MaxValue</key>
+                <integer>100</integer>
+                <key>Step</key>
+                <real>0.01</real>
+                <key>CellClass</key>
+                <string>BSSettingsSliderCell</string>
+            </dict>
+            <dict>
+                <key>Type</key>
+                <string>BSSettingsCell</string>
+                <key>Title</key>
+                <string>Corner Radius</string>
+                <key>SettingsKey</key>
+                <string>cornerRadius</string>
+                <key>DefaultValue</key>
+                <real>25.0</real>
+                <key>MinValue</key>
+                <integer>0</integer>
+                <key>MaxValue</key>
+                <integer>100</integer>
+                <key>Step</key>
+                <real>1</real>
+                <key>CellClass</key>
+                <string>BSSettingsSliderCell</string>
+            </dict>
+            <dict>
+                <key>Type</key>
+                <string>BSSettingsCell</string>
+                <key>Title</key>
+                <string>Color Tint</string>
+                <key>SettingsKey</key>
+                <string>colorTint</string>
+                <key>DefaultValue</key>
+                <string>#2563eb</string>
+                <key>CellClass</key>
+                <string>BSSettingsStringCell</string>
+            </dict>
+            <dict>
+                <key>Type</key>
+                <string>BSSettingsCell</string>
+                <key>Title</key>
+                <string>Animation Speed</string>
+                <key>SettingsKey</key>
+                <string>animationSpeed</string>
+                <key>DefaultValue</key>
+                <real>0.8</real>
+                <key>MinValue</key>
+                <integer>1</integer>
+                <key>MaxValue</key>
+                <integer>3</integer>
+                <key>Step</key>
+                <real>0.1</real>
+                <key>CellClass</key>
+                <string>BSSettingsSliderCell</string>
+            </dict>
+        </array>
+    </dict>
+</dict>
+</plist>
