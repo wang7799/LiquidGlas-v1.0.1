@@ -27,7 +27,8 @@ jobs:
             -fobjc-arc -dynamiclib \
             -arch arm64 -miphoneos-version-min=15.0 \
             -isysroot "$SDK" \
-            -framework Foundation -framework UIKit -framework AVFoundation \
+            -framework Foundation -framework UIKit -framework AVFoundation -framework CoreGraphics \
+            -Wno-deprecated-declarations \
             -o build/LGPercentageDisplay.dylib \
             LiquidGlas/LGPercentageDisplay.m
           file build/LGPercentageDisplay.dylib
