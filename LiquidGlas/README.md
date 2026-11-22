@@ -61,6 +61,13 @@ apt-get install liquidglas
 
 **安装后必须 respring（或 ldrestart）**，dylib 的 constructor 只在进程加载时执行一次。
 
+### v1.0.5 性能与可见性
+
+- 去掉 0.5 秒整棵视图树轮询，改为事件驱动 + **2 秒轻量心跳**；扫描用 `class_getName` + `strcasestr` 做 C 字符串匹配，不再为每个视图分配 `NSString`、不再对无关视图做 KVC 异常探测；扫描深度 12、节点预算 3000、事件扫描 1 秒节流。
+- 浮层从 `UIVisualEffectView`（实时模糊）换成普通半透明 `UIView`，去掉持续 GPU 模糊开销 —— 这是发热的主要来源之一。
+- 控制中心可见期间**常驻显示**「音量 xx% / 亮度 xx%」浮层（8 秒生命周期，控制中心可见时持续延长），不再依赖识别私有滑条类名或先拖动滑条；识别到滑条时仍额外叠加数字。
+- 保留 respring 后的「LiquidGlas 已加载 ✓」横幅，用于判断注入是否成功。日志前缀 `[LiquidGlas]`。
+
 ## 🔄 Troubleshooting
 
 ### Effect not appearing?
