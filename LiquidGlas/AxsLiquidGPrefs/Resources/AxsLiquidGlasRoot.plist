@@ -58,6 +58,18 @@
                 <key>Type</key>
                 <string>BSSettingsCell</string>
                 <key>Title</key>
+                <string>Load Banner (注入确认)</string>
+                <key>SettingsKey</key>
+                <string>showLoadBanner</string>
+                <key>DefaultValue</key>
+                <integer>1</integer>
+                <key>CellClass</key>
+                <string>BSSettingsBooleanCell</string>
+            </dict>
+            <dict>
+                <key>Type</key>
+                <string>BSSettingsCell</string>
+                <key>Title</key>
                 <string>Percentage Font Size</string>
                 <key>SettingsKey</key>
                 <string>percentageFontSize</string>

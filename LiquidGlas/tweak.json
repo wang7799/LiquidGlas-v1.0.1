@@ -92,6 +92,13 @@
       "default": true
     },
     {
+      "key": "showLoadBanner",
+      "type": "boolean",
+      "title": "Load Banner",
+      "description": "Show a one-time banner after respring to confirm the tweak was injected",
+      "default": true
+    },
+    {
       "key": "percentageFontSize",
       "type": "float",
       "title": "Percentage Font Size",

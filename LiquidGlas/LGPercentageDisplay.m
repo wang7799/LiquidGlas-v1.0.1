@@ -1,15 +1,13 @@
 //
-//  LGPercentageDisplay.m  (v1.0.3)
+//  LGPercentageDisplay.m  (v1.0.4)
 //  LiquidGlas - Control Center volume / brightness percentage overlay
 //
-//  v1.0.3 修复（百分比不显示）：
-//  1. [UIApplication windows] 在 iOS 15+ 的 scene-based 进程里经常不包含控制中心窗口，
-//     改为同时枚举 UIWindowScene.windows / keyWindow / 旧 windows 并去重。
-//  2. 亮度、音量变化通知到达时立即重新扫描视图树（用户拖动滑条必然触发），不再等定时器。
-//  3. 放宽滑块识别：类名继承链 + 无障碍标签 + 父视图链 + 尺寸启发式。
-//  4. 找不到滑块时在最上层窗口显示一个 1.2 秒的百分比浮层作为保底，
-//     这样即使私有类名完全变了，用户也能看到数字（同时证明模块确实被注入）。
-//  5. 加 NSLog 诊断日志（前缀 [LiquidGlas]），可用 idevicesyslog / oslog 查看。
+//  v1.0.3：修复窗口枚举（UIWindowScene）、通知即时扫描、放宽识别、保底 HUD、诊断日志。
+//  v1.0.4：针对 Dopamine RootHide / iOS 17.3.1 再加两条"看得见"的诊断与保底：
+//  1. respring 后 1.5 秒显示一次「LiquidGlas 已加载 ✓」横幅 ——
+//     看到它 = dylib 已被注入并初始化；看不到 = 注入/越狱状态问题，不用再猜代码。
+//  2. 控制中心一出现就主动弹一次「音量 xx% · 亮度 xx%」浮层（不必拖动滑条），
+//     避免"只打开看一眼、没触发通知所以什么都没有"的情况。
 //
 //  数值取自公开 API：AVAudioSession.outputVolume / UIScreen.mainScreen.brightness。
 //  不引用私有类头文件、不 hook 私有方法，只依赖公开框架，隐根 / 无根环境均可加载。
@@ -25,6 +23,11 @@ static char kLGPercentLabelKey;
 static char kLGPercentKindKey;
 static char kLGCachedBoundsKey;
 static NSTimeInterval const kLGRefreshInterval = 0.5;
+
+// 控制中心展开/收起的边沿检测（不依赖 window 类名，靠视图类名）
+static BOOL LGSawControlCenterView = NO;
+static BOOL LGHudShownForPresentation = NO;
+static NSUInteger LGNoControlCenterTicks = 0;
 
 typedef NS_ENUM(NSUInteger, LGSliderKind) {
     LGSliderKindNone = 0,
@@ -136,7 +139,6 @@ static LGSliderKind LGKindForView(UIView *view) {
                     [a11y containsString:@"亮度"];
     if (!relevant) return LGSliderKindNone;
 
-    // 不再强求类名含 slider：有数值属性或尺寸像滑条即可
     BOOL looksLikeSlider = [chain containsString:@"slider"] || LGHasNumericValue(view) || tall || wide;
     if (!looksLikeSlider) return LGSliderKindNone;
 
@@ -145,7 +147,7 @@ static LGSliderKind LGKindForView(UIView *view) {
     BOOL isBrightness = [chain containsString:@"brightness"] ||
                         [chain containsString:@"display"] ||
                         [a11y containsString:@"brightness"] || [a11y containsString:@"亮度"];
-    if (isVolume && isBrightness) isBrightness = NO;   // 音量优先，避免同一视图重复判定
+    if (isVolume && isBrightness) isBrightness = NO;
 
     if (!isVolume && !isBrightness) {
         UIView *parent = view.superview;
@@ -269,6 +271,15 @@ static NSHashTable<UIView *> *LGTrackedSliders(void) {
 
 static void LGScanView(UIView *view, NSUInteger depth) {
     if (depth > 20) return;
+
+    // 控制中心不一定是独立 window，靠视图类名判断它是否展开
+    NSString *className = NSStringFromClass([view class]).lowercaseString;
+    if ([className containsString:@"ccui"] ||
+        [className containsString:@"controlcenter"] ||
+        [className containsString:@"module"]) {
+        LGSawControlCenterView = YES;
+    }
+
     LGSliderKind kind = LGKindForView(view);
     if (kind != LGSliderKindNone && ![LGTrackedSliders() containsObject:view]) {
         [LGTrackedSliders() addObject:view];
@@ -281,6 +292,7 @@ static void LGScanView(UIView *view, NSUInteger depth) {
 }
 
 static void LGScanWindows(void) {
+    LGSawControlCenterView = NO;
     for (UIWindow *window in LGAllWindows()) {
         if (window.hidden || window.alpha < 0.01) continue;
         LGScanView(window, 0);
@@ -300,7 +312,7 @@ static BOOL LGHasVisibleSlider(LGSliderKind kind) {
     return NO;
 }
 
-#pragma mark - Fallback HUD (when no slider can be found at all)
+#pragma mark - Fallback HUD
 
 static UIView *LGHudContainer(void) {
     static UIView *hud;
@@ -308,14 +320,16 @@ static UIView *LGHudContainer(void) {
     dispatch_once(&onceToken, ^{
         UIVisualEffectView *blur = [[UIVisualEffectView alloc]
             initWithEffect:[UIBlurEffect effectWithStyle:UIBlurEffectStyleDark]];
-        blur.frame = CGRectMake(0, 0, 150, 34);
+        blur.frame = CGRectMake(0, 0, 220, 34);
         blur.layer.cornerRadius = 17.0;
         blur.clipsToBounds = YES;
         blur.userInteractionEnabled = NO;
         UILabel *label = [[UILabel alloc] initWithFrame:blur.bounds];
         label.textAlignment = NSTextAlignmentCenter;
         label.textColor = [UIColor whiteColor];
-        label.font = [UIFont systemFontOfSize:14 weight:UIFontWeightSemibold];
+        label.font = [UIFont systemFontOfSize:13 weight:UIFontWeightSemibold];
+        label.adjustsFontSizeToFitWidth = YES;
+        label.minimumScaleFactor = 0.7;
         label.tag = 0x4C4748;
         [blur.contentView addSubview:label];
         hud = blur;
@@ -336,14 +350,14 @@ static void LGShowFallbackHUD(NSString *text) {
 
     CGFloat top = 20.0;
     if (@available(iOS 11.0, *)) top = target.safeAreaInsets.top + 8.0;
-    hud.frame = CGRectMake((target.bounds.size.width - 150.0) / 2.0, MAX(top, 20.0), 150.0, 34.0);
+    hud.frame = CGRectMake((target.bounds.size.width - 220.0) / 2.0, MAX(top, 20.0), 220.0, 34.0);
     [hud.layer removeAllAnimations];
     hud.alpha = 1.0;
     [target addSubview:hud];
     [target bringSubviewToFront:hud];
-    LGLog(@"fallback HUD: %@ on %@", text, NSStringFromClass([target class]));
+    LGLog(@"HUD: %@ on %@", text, NSStringFromClass([target class]));
 
-    [UIView animateWithDuration:0.25 delay:1.2 options:UIViewAnimationOptionAllowUserInteraction
+    [UIView animateWithDuration:0.25 delay:1.6 options:UIViewAnimationOptionAllowUserInteraction
                      animations:^{ hud.alpha = 0.0; }
                      completion:^(BOOL finished) { [hud removeFromSuperview]; hud.alpha = 1.0; }];
 }
@@ -366,6 +380,32 @@ static void LGOnValueChanged(LGSliderKind kind) {
     value = MIN(MAX(value, 0.0), 1.0);
     NSString *title = (kind == LGSliderKindVolume) ? @"音量" : @"亮度";
     LGShowFallbackHUD([NSString stringWithFormat:@"%@ %d%%", title, (int)lroundf(value * 100.0)]);
+}
+
+// 控制中心一出现就主动显示一次，不需要用户先拖动滑条
+static void LGOnControlCenterAppeared(void) {
+    LGRefresh();
+    if (!LGPrefsBool(@"showFallbackHUD", YES)) return;
+    if (LGHasVisibleSlider(LGSliderKindVolume) && LGHasVisibleSlider(LGSliderKindBrightness)) return;
+
+    CGFloat volume = MIN(MAX([AVAudioSession sharedInstance].outputVolume, 0.0), 1.0);
+    CGFloat brightness = MIN(MAX([UIScreen mainScreen].brightness, 0.0), 1.0);
+    NSString *text = [NSString stringWithFormat:@"音量 %d%% · 亮度 %d%%",
+                        (int)lroundf(volume * 100.0), (int)lroundf(brightness * 100.0)];
+    LGShowFallbackHUD(text);
+    LGLog(@"control center appeared: %@", text);
+}
+
+// respring 后的注入确认横幅：看到它 = dylib 已被加载并初始化
+static void LGShowLoadBanner(void) {
+    if (!LGPrefsBool(@"showLoadBanner", YES)) return;
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.5 * NSEC_PER_SEC)),
+                   dispatch_get_main_queue(), ^{
+        LGLog(@"load banner, windows=%lu, bundle=%@",
+              (unsigned long)LGAllWindows().count,
+              [[NSBundle mainBundle] bundleIdentifier] ?: @"(nil)");
+        LGShowFallbackHUD(@"LiquidGlas 已加载 ✓");
+    });
 }
 
 #pragma mark - Bootstrap
@@ -402,9 +442,20 @@ static void LGPercentageDisplayInit(void) {
                                                          repeats:YES
                                                            block:^(NSTimer *t) {
             tick++;
-            // 控制中心可见时每 0.5s 扫一次，其余每 2s 兜底；拖动由通知即时触发
-            if (LGControlCenterVisible() || tick % 4 == 0) LGScanWindows();
+            // 每次都扫，保证控制中心一展开就能捕获滑条；视图释放后 weak 表自动清理
+            LGScanWindows();
             LGRefresh();
+
+            if (LGSawControlCenterView || LGControlCenterVisible()) {
+                LGNoControlCenterTicks = 0;
+                if (!LGHudShownForPresentation) {
+                    LGHudShownForPresentation = YES;
+                    LGOnControlCenterAppeared();
+                }
+            } else if (++LGNoControlCenterTicks > 6) {
+                // 约 3 秒没看到控制中心视图，视为已收起，下次展开重新弹
+                LGHudShownForPresentation = NO;
+            }
         }];
         [[NSRunLoop mainRunLoop] addTimer:timer forMode:NSRunLoopCommonModes];
 
@@ -413,5 +464,6 @@ static void LGPercentageDisplayInit(void) {
         // SpringBoard 启动稍晚时控制中心视图才建立，补一次延迟扫描
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1.0 * NSEC_PER_SEC)),
                        dispatch_get_main_queue(), ^{ LGScanWindows(); LGRefresh(); });
+        LGShowLoadBanner();
     });
 }
