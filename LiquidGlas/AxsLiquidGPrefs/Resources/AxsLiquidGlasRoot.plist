@@ -22,6 +22,48 @@
                 <key>Type</key>
                 <string>BSSettingsCell</string>
                 <key>Title</key>
+                <string>Volume Percentage (音量百分比)</string>
+                <key>SettingsKey</key>
+                <string>showVolumePercentage</string>
+                <key>DefaultValue</key>
+                <integer>1</integer>
+                <key>CellClass</key>
+                <string>BSSettingsBooleanCell</string>
+            </dict>
+            <dict>
+                <key>Type</key>
+                <string>BSSettingsCell</string>
+                <key>Title</key>
+                <string>Brightness Percentage (亮度百分比)</string>
+                <key>SettingsKey</key>
+                <string>showBrightnessPercentage</string>
+                <key>DefaultValue</key>
+                <integer>1</integer>
+                <key>CellClass</key>
+                <string>BSSettingsBooleanCell</string>
+            </dict>
+            <dict>
+                <key>Type</key>
+                <string>BSSettingsCell</string>
+                <key>Title</key>
+                <string>Percentage Font Size</string>
+                <key>SettingsKey</key>
+                <string>percentageFontSize</string>
+                <key>DefaultValue</key>
+                <real>12</real>
+                <key>MinValue</key>
+                <integer>9</integer>
+                <key>MaxValue</key>
+                <integer>24</integer>
+                <key>Step</key>
+                <real>1</real>
+                <key>CellClass</key>
+                <string>BSSettingsSliderCell</string>
+            </dict>
+            <dict>
+                <key>Type</key>
+                <string>BSSettingsCell</string>
+                <key>Title</key>
                 <string>Glass Opacity</string>
                 <key>SettingsKey</key>
                 <string>glassOpacity</string>

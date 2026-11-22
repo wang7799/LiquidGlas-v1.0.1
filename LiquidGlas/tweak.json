@@ -69,6 +69,29 @@
       "title": "Color Tint",
       "description": "Custom color tint for the glass effect (hex)",
       "default": "#2563eb"
+    },
+    {
+      "key": "showVolumePercentage",
+      "type": "boolean",
+      "title": "Volume Percentage",
+      "description": "Show live volume percentage on the Control Center volume slider",
+      "default": true
+    },
+    {
+      "key": "showBrightnessPercentage",
+      "type": "boolean",
+      "title": "Brightness Percentage",
+      "description": "Show live brightness percentage on the Control Center brightness slider",
+      "default": true
+    },
+    {
+      "key": "percentageFontSize",
+      "type": "float",
+      "title": "Percentage Font Size",
+      "description": "Font size of the percentage label",
+      "min": 9,
+      "max": 24,
+      "default": 12
     }
   ],
   "compatibility": {

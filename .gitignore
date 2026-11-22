@@ -1,0 +1,5 @@
+build/
+release-debs/
+extra/
+.DS_Store
+*.deb

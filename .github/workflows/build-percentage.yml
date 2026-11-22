@@ -1,0 +1,69 @@
+name: Build LGPercentageDisplay dylib
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/build-percentage.yml'
+      - 'LiquidGlas/LGPercentageDisplay.m'
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain info
+        run: |
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-path
+
+      - name: Compile arm64 iOS dylib
+        run: |
+          set -e
+          mkdir -p build
+          SDK="$(xcrun --sdk iphoneos --show-sdk-path)"
+          xcrun --sdk iphoneos clang \
+            -fobjc-arc -dynamiclib \
+            -arch arm64 -miphoneos-version-min=15.0 \
+            -isysroot "$SDK" \
+            -framework Foundation -framework UIKit -framework AVFoundation \
+            -o build/LGPercentageDisplay.dylib \
+            LiquidGlas/LGPercentageDisplay.m
+          file build/LGPercentageDisplay.dylib
+          ls -lh build/LGPercentageDisplay.dylib
+
+      - name: Ad-hoc sign
+        run: |
+          brew install ldid >/dev/null 2>&1 || true
+          if command -v ldid >/dev/null 2>&1; then
+            ldid -S build/LGPercentageDisplay.dylib
+            echo "signed with ldid"
+          else
+            codesign -s - --force build/LGPercentageDisplay.dylib || true
+            echo "signed with codesign ad-hoc"
+          fi
+
+      - name: Write tweak filter plist
+        run: |
+          printf '%s\n' \
+            '<?xml version="1.0" encoding="UTF-8"?>' \
+            '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' \
+            '<plist version="1.0">' \
+            '<dict>' \
+            '  <key>Filter</key>' \
+            '  <dict>' \
+            '    <key>Bundles</key>' \
+            '    <array>' \
+            '      <string>com.apple.springboard</string>' \
+            '    </array>' \
+            '  </dict>' \
+            '</dict>' \
+            '</plist>' > build/LGPercentageDisplay.plist
+          plutil -lint build/LGPercentageDisplay.plist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lg-percentage-dylib
+          path: build/
+          if-no-files-found: error

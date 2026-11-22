@@ -7,6 +7,9 @@
 #import <UIKit/UIKit.h>
 #import <QuartzCore/QuartzCore.h>
 
+@interface BGRenderServer : NSObject
+@end
+
 @interface BGRenderServer ()
 @property (nonatomic, assign) CGFloat glassOpacity;
 @property (nonatomic, assign) CGFloat blurAmount;
@@ -46,18 +49,18 @@
         glassGradient.startPoint = CGPointMake(0.0, 0.0);
         glassGradient.endPoint = CGPointMake(1.0, 1.0);
         
-        NSMutableArray<CGColor *> *glassColors = [NSMutableArray array];
-        glassColors addObject([[UIColor colorWithRed:0.95 green:0.95 blue:0.98 alpha:0.1] CGColor]);
-        glassColors addObject([[UIColor colorWithRed:0.1 green:0.1 blue:0.2 alpha:0.3] CGColor]);
-        
-        glassGradient.colors = [glassColors copy];
+        // CGColorRef 不是 ObjC 对象，放进 NSArray 需要 bridge 转换
+        glassGradient.colors = @[
+            (__bridge id)[UIColor colorWithRed:0.95 green:0.95 blue:0.98 alpha:0.1].CGColor,
+            (__bridge id)[UIColor colorWithRed:0.1 green:0.1 blue:0.2 alpha:0.3].CGColor
+        ];
         glassGradient.locations = @[@0.0f, @1.0f];
         glassGradient.opacity = 0.85f;
         glassGradient.shadowOpacity = 0.1;
         glassGradient.shadowOffset = CGSizeMake(0, 2);
         glassGradient.shadowRadius = 15.0f;
         
-        view.layer.addSublayer(glassGradient);
+        [view.layer addSublayer:glassGradient];
         
         view.layer.cornerRadius = 25.0f;
         view.layer.borderWidth = 0.5f;

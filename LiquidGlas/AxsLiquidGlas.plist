@@ -16,6 +16,6 @@
     <key>Require</key>
     <true/>
     <key>Version</key>
-    <integer>1.0.0</integer>
+    <string>1.0.0</string>
 </dict>
 </plist>

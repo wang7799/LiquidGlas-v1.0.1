@@ -7,45 +7,52 @@
 #import <substrate.h>
 #import <QuartzCore/QuartzCore.h>
 
-@interface SpringBoard (LiquidGlass)
-@property (nonatomic, strong) UIView *controlCenterPanel;
+// SpringBoard 是 UIApplication 的子类。这里用 Logos hook 而不是 category 覆盖，
+// 否则 applicationDidFinishLaunching: 会整体替换系统实现，导致 SpringBoard 启动异常。
+@interface SpringBoard : UIApplication
+- (void)controlCenterWillPresent:(NSNotification *)notification;
+- (void)controlCenterDidClose:(NSNotification *)notification;
 @end
 
-@implementation SpringBoard (LiquidGlass)
+// 私有通知用字符串注册，避免链接期依赖不存在的常量符号
+static NSString * const kLGControlCenterWillPresent = @"UIControlCenterWillPresentNotification";
+
+%hook SpringBoard
 
 - (void)applicationDidFinishLaunching:(UIApplication *)application {
-    [super applicationDidFinishLaunching:application];
-    
+    %orig;
+
     if (@available(iOS 14.0, *)) {
         [[NSNotificationCenter defaultCenter] addObserver:self
                                                  selector:@selector(controlCenterWillPresent:)
-                                                     name:UIControlCenterWillPresentNotification
+                                                     name:kLGControlCenterWillPresent
                                                    object:nil];
     }
 }
 
 - (void)controlCenterWillPresent:(NSNotification *)notification {
     UIView *view = [notification object];
-    if(view) {
-        view.layer.masksToBounds = NO;
-        view.layer.cornerRadius = 25.0f;
-        view.layer.borderWidth = 1.0f;
-        
-        // Glass effect layer
-        CAShapeLayer *glassLayer = [CAShapeLayer layer];
-        glassLayer.frame = view.bounds;
-        glassLayer.fillColor = [UIColor colorWithWhite:0.15 alpha:0.3].CGColor;
-        glassLayer.strokeColor = [UIColor colorWithWhite:0.25 alpha:0.4].CGColor;
-        glassLayer.lineWidth = 1.0f;
-        
-        view.layer.mask = glassLayer;
-    }
+    if (![view isKindOfClass:[UIView class]]) return;
+
+    view.layer.masksToBounds = NO;
+    view.layer.cornerRadius = 25.0f;
+    view.layer.borderWidth = 1.0f;
+
+    // CAShapeLayer 作为 mask 必须设置 path，否则视图会被完全遮掉
+    CAShapeLayer *glassLayer = [CAShapeLayer layer];
+    glassLayer.frame = view.bounds;
+    glassLayer.path = [UIBezierPath bezierPathWithRoundedRect:view.bounds cornerRadius:25.0f].CGPath;
+    glassLayer.fillColor = [UIColor colorWithWhite:0.15 alpha:0.3].CGColor;
+    glassLayer.strokeColor = [UIColor colorWithWhite:0.25 alpha:0.4].CGColor;
+    glassLayer.lineWidth = 1.0f;
+
+    view.layer.mask = glassLayer;
 }
 
 - (void)controlCenterDidClose:(NSNotification *)notification {
 }
 
-@end
+%end
 
 // Liquid Glass Effect Manager
 @interface LiquidGlassEffectManager : NSObject
@@ -101,36 +108,40 @@
 
 @end
 
+@interface SBSettingsViewController : UIViewController
+@end
+
 %hook SBSettingsViewController
 
 - (void)willMoveToWindow:(UIWindow *)window {
     %orig;
-    
-    id manager = [self valueForKey:@"_viewControllerForActivePeer"];
-    if(manager && [manager isKindOfClass:NSObject class]) {
-        [[LiquidGlassEffectManager sharedManager] applyToView:self.view];
-    }
+
+    // 私有 ivar 不一定存在，KVC 取不到时会抛 NSUndefinedKeyException
+    @try {
+        id manager = [self valueForKey:@"_viewControllerForActivePeer"];
+        if (manager && [manager isKindOfClass:[NSObject class]]) {
+            [[LiquidGlassEffectManager sharedManager] applyToView:self.view];
+        }
+    } @catch (NSException *exception) {}
 }
 
 %end
 
 // Shader for glass effect
-NSString *glassShaderFragmentSource = @"
-precision highp float;
-uniform sampler2D u_samplerBackground;
-varying highp vec2 v_texCoord;
-uniform float u_glassOpacity;
-uniform vec3 u_tintColor;
-
-void main() {
-    vec4 background = texture2D(u_samplerBackground, v_texCoord);
-    
-    float fresnelEffect = 0.15 + (u_glassOpacity * 0.85);
-    vec3 glassColor = vec3(u_tintColor) * u_glassOpacity;
-    
-    gl_FragColor = vec4(mix(glassColor, background.rgb, fresnelEffect), background.a);
-}
-";
+// ObjC 字面量不能跨行，改用相邻字符串拼接
+__unused static NSString * const glassShaderFragmentSource =
+    @"precision highp float;\n"
+    @"uniform sampler2D u_samplerBackground;\n"
+    @"varying highp vec2 v_texCoord;\n"
+    @"uniform float u_glassOpacity;\n"
+    @"uniform vec3 u_tintColor;\n"
+    @"\n"
+    @"void main() {\n"
+    @"    vec4 background = texture2D(u_samplerBackground, v_texCoord);\n"
+    @"    float fresnelEffect = 0.15 + (u_glassOpacity * 0.85);\n"
+    @"    vec3 glassColor = vec3(u_tintColor) * u_glassOpacity;\n"
+    @"    gl_FragColor = vec4(mix(glassColor, background.rgb, fresnelEffect), background.a);\n"
+    @"}\n";
 
 %ctor {
     NSLog(@"LiquidGlas Control Center Glass Effect - Loaded");

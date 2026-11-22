@@ -21,28 +21,33 @@
         self.layer.borderColor = [UIColor colorWithWhite:0.2 alpha:0.4].CGColor;
         
         // Add subtle glow effect
-        self.layer.shadowColor = [UIColor colorWithRed:0.1 blue:0.3 green:0.6 alpha:0.3].CGColor;
+        self.layer.shadowColor = [UIColor colorWithRed:0.1 green:0.3 blue:0.6 alpha:0.3].CGColor;
         self.layer.shadowOffset = CGSizeMake(0, 0);
         self.layer.shadowOpacity = 0.2;
         self.layer.shadowRadius = 5.0f;
+
+        // 半透明玻璃渐变，只创建一次
+        CAGradientLayer *widgetGradient = [CAGradientLayer layer];
+        widgetGradient.frame = self.bounds;
+        widgetGradient.cornerRadius = 12.0f;
+        widgetGradient.colors = @[
+            (__bridge id)[UIColor colorWithWhite:0.1 alpha:0.2].CGColor,
+            (__bridge id)[UIColor clearColor].CGColor
+        ];
+        widgetGradient.locations = @[@0.0f, @1.0f];
+        [self.layer insertSublayer:widgetGradient atIndex:0];
     }
     return self;
 }
 
-- (void)drawRect:(CGRect)rect {
-    // Widget background with glass effect
-    UIBezierPath *path = [UIBezierPath bezierPathWithRoundedRect:self.bounds cornerRadius:12.0f];
-    
-    // Create gradient for widget background
-    CAGradientLayer *widgetGradient = [CAGradientLayer layer];
-    widgetGradient.frame = self.bounds;
-    widgetGradient.colors = @[
-        [[UIColor colorWithWhite:0.1 alpha:0.2] CGColor],
-        [[UIColor clearColor] CGColor]
-    ];
-    widgetGradient.locations = @[@0.0f, @1.0f];
-    
-    [self.layer addSublayer:widgetGradient];
+- (void)layoutSubviews {
+    [super layoutSubviews];
+    // 渐变层只在初始化时创建一次，这里跟随尺寸变化，避免 drawRect 反复叠加图层
+    for (CALayer *layer in self.layer.sublayers) {
+        if ([layer isKindOfClass:[CAGradientLayer class]]) {
+            layer.frame = self.bounds;
+        }
+    }
 }
 
-%end
+@end
