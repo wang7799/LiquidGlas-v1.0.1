@@ -8,23 +8,8 @@ on:
       - 'LiquidGlas/LGPercentageDisplay.m'
 
 jobs:
-  probe13:
-    runs-on: macos-13
-    steps:
-      - run: echo "macos-13 OK"
-
-  probe15:
-    runs-on: macos-15
-    steps:
-      - run: echo "macos-15 OK"
-
-  probe:
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "ubuntu runner OK"
-
   build:
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
 
