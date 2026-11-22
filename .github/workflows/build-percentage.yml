@@ -58,6 +58,10 @@ jobs:
             '    <array>' \
             '      <string>com.apple.springboard</string>' \
             '    </array>' \
+            '    <key>Executables</key>' \
+            '    <array>' \
+            '      <string>SpringBoard</string>' \
+            '    </array>' \
             '  </dict>' \
             '</dict>' \
             '</plist>' > build/LGPercentageDisplay.plist

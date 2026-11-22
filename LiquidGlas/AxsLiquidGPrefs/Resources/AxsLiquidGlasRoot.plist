@@ -46,6 +46,18 @@
                 <key>Type</key>
                 <string>BSSettingsCell</string>
                 <key>Title</key>
+                <string>Fallback HUD (找不到滑条时)</string>
+                <key>SettingsKey</key>
+                <string>showFallbackHUD</string>
+                <key>DefaultValue</key>
+                <integer>1</integer>
+                <key>CellClass</key>
+                <string>BSSettingsBooleanCell</string>
+            </dict>
+            <dict>
+                <key>Type</key>
+                <string>BSSettingsCell</string>
+                <key>Title</key>
                 <string>Percentage Font Size</string>
                 <key>SettingsKey</key>
                 <string>percentageFontSize</string>

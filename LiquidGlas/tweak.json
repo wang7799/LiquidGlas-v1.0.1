@@ -85,6 +85,13 @@
       "default": true
     },
     {
+      "key": "showFallbackHUD",
+      "type": "boolean",
+      "title": "Fallback HUD",
+      "description": "Show a brief percentage overlay when the Control Center slider cannot be found",
+      "default": true
+    },
+    {
       "key": "percentageFontSize",
       "type": "float",
       "title": "Percentage Font Size",

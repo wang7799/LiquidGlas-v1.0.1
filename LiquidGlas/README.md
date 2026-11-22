@@ -46,9 +46,20 @@ apt-get install liquidglas
 | --- | --- | --- |
 | 音量百分比 | `showVolumePercentage` | 开 |
 | 亮度百分比 | `showBrightnessPercentage` | 开 |
+| 找不到滑条时的保底浮层 | `showFallbackHUD` | 开 |
 | 百分比字号 | `percentageFontSize` | 12 (9~24) |
 
-> 改动只在源码。GitHub Release 里的 deb 使用预编译 dylib，需要重新编译后替换 payload 才会带上本功能，见下方「Build from Source」。
+> 改动只在源码。GitHub Release 里的 deb 需要重新编译的 `LGPercentageDisplay.dylib`（由 CI 产出）合进 payload 才会带上本功能，见下方「Build from Source」。
+
+### v1.0.3 修复：百分比不显示
+
+- 窗口枚举改为 `UIWindowScene.windows` + `keyWindow` + 旧 `windows` 去重 —— iOS 15+ 的控制中心常挂在 scene 上，旧的 `UIApplication.windows` 拿不到它的视图。
+- 亮度/音量变化通知到达时立即重新扫描视图树（拖动滑条必然触发），不再等定时器。
+- 放宽滑条识别：类名继承链、无障碍标签、父视图链、尺寸启发式。
+- 完全找不到滑条时，在最上层窗口显示 1.2 秒的「音量/亮度 xx%」浮层作为保底；看到浮层即说明模块已被注入。
+- 日志前缀 `[LiquidGlas]`，可用 `idevicesyslog` / `oslog` 查看 `loaded, windows=...`、`found volume slider: ...`、`fallback HUD: ...`。
+
+**安装后必须 respring（或 ldrestart）**，dylib 的 constructor 只在进程加载时执行一次。
 
 ## 🔄 Troubleshooting
 

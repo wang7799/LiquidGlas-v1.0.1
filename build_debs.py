@@ -29,7 +29,7 @@ EXTRA = ROOT / "extra"          # optional add-ons (CI-built percentage dylib + 
 OUT = ROOT / "release-debs"
 
 PKG = "com.wang7799.liquidglas"
-VERSION = "1.0.2"
+VERSION = "1.0.3"
 NAME = "LiquidGlas"
 MAINTAINER = "wang7799"
 AUTHOR = "wang7799"
