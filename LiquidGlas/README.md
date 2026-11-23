@@ -68,6 +68,18 @@ apt-get install liquidglas
 - 控制中心可见期间**常驻显示**「音量 xx% / 亮度 xx%」浮层（8 秒生命周期，控制中心可见时持续延长），不再依赖识别私有滑条类名或先拖动滑条；识别到滑条时仍额外叠加数字。
 - 保留 respring 后的「LiquidGlas 已加载 ✓」横幅，用于判断注入是否成功。日志前缀 `[LiquidGlas]`。
 
+### v1.0.6 修复真正的根因 + 彩色图标
+
+v1.0.2~1.0.5 的代码其实**从未在正确的进程里执行**：filter plist 只注入 `com.apple.springboard` / `SpringBoard`，而 iOS 17+ 的控制中心滑条属于独立的 `com.apple.controlcenter` 进程；constructor 里还有一道 bundle 判断把它挡掉。这版：
+
+- filter plist 与 `AxsLiquidGlas.plist` 同时注入 `com.apple.springboard` + `com.apple.controlcenter`；模块不再按 bundle id 自我拦截（只跳过 chronod / WidgetRenderer / ClockAngel 这类扩展进程）。
+- 用 `NSClassFromString` + `class_replaceMethod` 事件驱动 hook `CCUIContinuousSliderView` 的 `layoutSubviews` / `setValue:`，取代整棵视图树轮询；1 Hz 的 `dispatch_source` 只做有预算的类名发现，且在主队列。
+- 数值以 `AVAudioSession.outputVolume` / `UIScreen.brightness` 为准，私有 `value` 只作 `@try` 保护的回退，并用 `maximumValue` 区分 0..1 与 0..100 量程。
+- **彩色图标**：`LGGlyphScore` 在滑条子树里定位 glyph，`colorizeSliderIcons` 控制染色，私有颜色 setter 全部 `respondsToSelector` + `@try` 保护；`UIView + masksToBounds` 的填充层被排除，轨道/填充永不上色，避免鬼影描边。
+- 领域模型：`LGSliderDescriptor` 表 + `LGPercentageController` 单一状态所有者（NSMapTable），新增第三种滑条只需加一行表项和一个设置单元。
+
+新增设置：`colorizeSliderIcons`（默认开）、`sliderIconColor`（`#RRGGBB`，留空则用系统绿/蓝）。日志 `[LiquidGlas]`。
+
 ## 🔄 Troubleshooting
 
 ### Effect not appearing?
