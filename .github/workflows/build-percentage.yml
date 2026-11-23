@@ -73,3 +73,73 @@ jobs:
           name: lg-percentage-dylib-${{ matrix.os }}
           path: build/
           if-no-files-found: error
+
+  # Fallback: macOS hosted runners can sit in the queue for a long time.
+  # Same arm64 iOS dylib, cross-compiled with clang + lld against theos/sdks.
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain
+        run: |
+          clang --version
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq lld clang
+
+      - name: Fetch iOS SDK
+        run: |
+          set -e
+          git clone --depth 1 --filter=blob:none --sparse https://github.com/theos/sdks.git "$RUNNER_TEMP/sdks"
+          cd "$RUNNER_TEMP/sdks"
+          git sparse-checkout set iPhoneOS16.5.sdk
+          du -sh iPhoneOS16.5.sdk
+
+      - name: Fetch ldid for Linux
+        run: |
+          set -e
+          curl -sL -o "$RUNNER_TEMP/ldid" \
+            https://github.com/ProcursusTeam/ldid/releases/latest/download/ldid_linux_x86_64
+          chmod +x "$RUNNER_TEMP/ldid"
+
+      - name: Compile arm64 iOS dylib
+        run: |
+          set -e
+          SDK="$RUNNER_TEMP/sdks/iPhoneOS16.5.sdk"
+          mkdir -p build
+          clang -target arm64-apple-ios15.0 -fobjc-arc \
+            -isysroot "$SDK" -F"$SDK/System/Library/Frameworks" \
+            -fuse-ld=lld -Wl,-platform_version,ios,15.0,16.5 \
+            -framework Foundation -framework UIKit -framework AVFoundation -framework CoreGraphics \
+            -Wno-deprecated-declarations \
+            -dynamiclib -o build/LGPercentageDisplay.dylib \
+            LiquidGlas/LGPercentageDisplay.m
+          file build/LGPercentageDisplay.dylib
+          ls -lh build/LGPercentageDisplay.dylib
+
+      - name: Sign and write filter plist
+        run: |
+          set -e
+          "$RUNNER_TEMP/ldid" -S build/LGPercentageDisplay.dylib
+          printf '%s\n' \
+            '<?xml version="1.0" encoding="UTF-8"?>' \
+            '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' \
+            '<plist version="1.0">' \
+            '<dict>' \
+            '  <key>Filter</key>' \
+            '  <dict>' \
+            '    <key>Bundles</key>' \
+            '    <array>' \
+            '      <string>com.apple.springboard</string>' \
+            '      <string>com.apple.controlcenter</string>' \
+            '    </array>' \
+            '  </dict>' \
+            '</dict>' \
+            '</plist>' > build/LGPercentageDisplay.plist
+          python3 -c "import plistlib; print(plistlib.load(open('build/LGPercentageDisplay.plist','rb')))"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lg-percentage-dylib-linux
+          path: build/
+          if-no-files-found: error
