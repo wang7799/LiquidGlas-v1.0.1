@@ -101,19 +101,19 @@ static const char * const kLGBrightnessAccessibilityHints[] = {
     "brightness", "\xe4\xba\xae\xe5\xba\xa6", NULL
 };
 
-static const NSTimeInterval const kLGDiscoveryInterval = 1.0;
-static const double const kLGConfigThrottle = 0.5;
-static const NSUInteger const kLGScanBudget = 1500;
-static const NSInteger const kLGMaxAncestorLevels = 6;
-static const NSInteger const kLGMaxGlyphDepth = 3;
+static const NSTimeInterval kLGDiscoveryInterval = 1.0;
+static const double kLGConfigThrottle = 0.5;
+static const NSUInteger kLGScanBudget = 1500;
+static const NSInteger kLGMaxAncestorLevels = 6;
+static const NSInteger kLGMaxGlyphDepth = 3;
 
 // The public value and the private value may disagree while one of them is
 // still catching up. Inside this window they are treated as equal.
-static const double const kLGValueAgreementTolerance = 0.15;
+static const double kLGValueAgreementTolerance = 0.15;
 // A value that moved by less than this counts as "unchanged".
-static const double const kLGValueEpsilon = 0.005;
+static const double kLGValueEpsilon = 0.005;
 // The shortest interval between two system value reads on the slider path.
-static const double const kLGValueReadInterval = 0.1;
+static const double kLGValueReadInterval = 0.1;
 
 // The private colour setters that belong to the glyph.
 //
@@ -332,19 +332,15 @@ static NSDictionary *LGPreferenceDomain(void) {
     if (domain.count > 0) return domain;
 
     CFArrayRef keys = CFPreferencesCopyKeyList(CFSTR("com.wang7799.liquidglas"),
-                                               kCFPreferencesCurrentHost,
-                                               kCFPreferencesCurrentUser);
+                                               kCFPreferencesCurrentUser,
+                                               kCFPreferencesCurrentHost);
     if (!keys) return @{};
-    CFMutableDictionaryRef values = CFDictionaryCreateMutable(NULL, 0,
-                                                             &kCFTypeDictionaryKeyCallBacks,
-                                                             &kCFTypeDictionaryValueCallBacks);
-    if (!values) {
-        CFRelease(keys);
-        return @{};
-    }
-    CFPreferencesCopyMultiple(keys, CFSTR("com.wang7799.liquidglas"),
-                              kCFPreferencesCurrentHost, kCFPreferencesCurrentUser, values);
+    CFDictionaryRef values = CFPreferencesCopyMultiple(keys,
+                                                       CFSTR("com.wang7799.liquidglas"),
+                                                       kCFPreferencesCurrentUser,
+                                                       kCFPreferencesCurrentHost);
     CFRelease(keys);
+    if (!values) return @{};
     return (__bridge_transfer NSDictionary *)values;
 }
 
