@@ -1,0 +1,79 @@
+name: Build LGPercentageDisplay (Linux cross)
+
+# Fallback when GitHub-hosted macOS runners are stuck in the queue.
+# Produces the same arm64 iOS dylib + filter plist as build-percentage.yml.
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain
+        run: |
+          clang --version
+          command -v ld.lld || true
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq lld clang
+
+      - name: Fetch iOS SDK (theos/sdks)
+        run: |
+          set -e
+          git clone --depth 1 --filter=blob:none --sparse https://github.com/theos/sdks.git "$RUNNER_TEMP/sdks"
+          cd "$RUNNER_TEMP/sdks"
+          git sparse-checkout set iPhoneOS16.5.sdk
+          du -sh iPhoneOS16.5.sdk
+          ls iPhoneOS16.5.sdk/System/Library/Frameworks/UIKit.framework | head -5
+
+      - name: Fetch ldid for Linux
+        run: |
+          set -e
+          curl -sL -o "$RUNNER_TEMP/ldid" \
+            https://github.com/ProcursusTeam/ldid/releases/latest/download/ldid_linux_x86_64
+          chmod +x "$RUNNER_TEMP/ldid"
+          "$RUNNER_TEMP/ldid" -h 2>&1 | head -3 || true
+
+      - name: Compile arm64 iOS dylib
+        run: |
+          set -e
+          SDK="$RUNNER_TEMP/sdks/iPhoneOS16.5.sdk"
+          mkdir -p build
+          clang -target arm64-apple-ios15.0 -fobjc-arc \
+            -isysroot "$SDK" -F"$SDK/System/Library/Frameworks" \
+            -fuse-ld=lld -Wl,-platform_version,ios,15.0,16.5 \
+            -framework Foundation -framework UIKit -framework AVFoundation -framework CoreGraphics \
+            -Wno-deprecated-declarations \
+            -dynamiclib -o build/LGPercentageDisplay.dylib \
+            LiquidGlas/LGPercentageDisplay.m
+          file build/LGPercentageDisplay.dylib
+          ls -lh build/LGPercentageDisplay.dylib
+
+      - name: Ad-hoc sign
+        run: "$RUNNER_TEMP/ldid" -S build/LGPercentageDisplay.dylib
+
+      - name: Write tweak filter plist
+        run: |
+          printf '%s\n' \
+            '<?xml version="1.0" encoding="UTF-8"?>' \
+            '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' \
+            '<plist version="1.0">' \
+            '<dict>' \
+            '  <key>Filter</key>' \
+            '  <dict>' \
+            '    <key>Bundles</key>' \
+            '    <array>' \
+            '      <string>com.apple.springboard</string>' \
+            '      <string>com.apple.controlcenter</string>' \
+            '    </array>' \
+            '  </dict>' \
+            '</dict>' \
+            '</plist>' > build/LGPercentageDisplay.plist
+          cat build/LGPercentageDisplay.plist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lg-percentage-dylib-linux
+          path: build/
+          if-no-files-found: error
