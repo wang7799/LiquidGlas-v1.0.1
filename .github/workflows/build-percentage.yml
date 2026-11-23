@@ -57,10 +57,7 @@ jobs:
             '    <key>Bundles</key>' \
             '    <array>' \
             '      <string>com.apple.springboard</string>' \
-            '    </array>' \
-            '    <key>Executables</key>' \
-            '    <array>' \
-            '      <string>SpringBoard</string>' \
+            '      <string>com.apple.controlcenter</string>' \
             '    </array>' \
             '  </dict>' \
             '</dict>' \

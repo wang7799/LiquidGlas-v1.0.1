@@ -106,6 +106,20 @@
       "min": 9,
       "max": 24,
       "default": 12
+    },
+    {
+      "key": "colorizeSliderIcons",
+      "type": "boolean",
+      "title": "Colored Slider Icons",
+      "description": "Tint the volume and brightness glyphs instead of leaving them white",
+      "default": true
+    },
+    {
+      "key": "sliderIconColor",
+      "type": "string",
+      "title": "Slider Icon Color",
+      "description": "Optional #RRGGBB override for both glyphs; empty uses system colors",
+      "default": ""
     }
   ],
   "compatibility": {

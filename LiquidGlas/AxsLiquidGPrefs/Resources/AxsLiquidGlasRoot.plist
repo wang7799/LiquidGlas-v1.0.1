@@ -186,7 +186,30 @@
                 <key>CellClass</key>
                 <string>BSSettingsSliderCell</string>
             </dict>
-        </array>
+            <dict>
+                <key>Type</key>
+                <string>BSSettingsCell</string>
+                <key>Title</key>
+                <string>Colored Slider Icons (彩色图标)</string>
+                <key>SettingsKey</key>
+                <string>colorizeSliderIcons</string>
+                <key>DefaultValue</key>
+                <integer>1</integer>
+                <key>CellClass</key>
+                <string>BSSettingsBooleanCell</string>
+            </dict>
+            <dict>
+                <key>Type</key>
+                <string>BSSettingsCell</string>
+                <key>Title</key>
+                <string>Slider Icon Color (图标颜色, 空=系统色)</string>
+                <key>SettingsKey</key>
+                <string>sliderIconColor</string>
+                <key>DefaultValue</key>
+                <string></string>
+                <key>CellClass</key>
+                <string>BSSettingsStringCell</string>
+            </dict>        </array>
     </dict>
 </dict>
 </plist>
